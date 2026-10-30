@@ -1,86 +1,48 @@
+"""Destination Verifier: returns the capital of a country as strict JSON (CountryCapital)."""
+
 import asyncio
+import os
+import sys
+
 from google.adk import Agent
 from google.adk.runners import InMemoryRunner
-from google.adk.sessions import Session
 from google.genai import types
-from pydantic import BaseModel  # Added BaseModel import
+from pydantic import BaseModel, Field
 
-import os
-from dotenv import load_dotenv
-
-import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from callback_logging import log_query_to_model, log_model_response
-import google.cloud.logging
-
-# 1. Load environment variables from the agent directory's .env file
-load_dotenv()
-google_cloud_project = os.getenv("GOOGLE_CLOUD_PROJECT")
-google_cloud_location = os.getenv("GOOGLE_CLOUD_LOCATION")
-google_genai_use_vertexai = os.getenv("GOOGLE_GENAI_USE_VERTEXAI")
-model_name = os.getenv("MODEL")
-
-cloud_logging_client = google.cloud.logging.Client()
-cloud_logging_client.setup_logging()
+from callback_logging import log_model_response, log_query_to_model, setup_logging  # noqa: E402
+from settings import MODEL  # noqa: E402
 
 
-# 2. Define the Pydantic model CountryCapital
 class CountryCapital(BaseModel):
-    capital: str
+    capital: str = Field(description="The capital city of the requested country.")
 
 
-# Create an async main function
-async def main():
-
-    # 3. Set or load other variables
-    app_name = 'geo_validator_app'
-    user_id_1 = 'user1'
-
-    # 4. Define Your Agent
-    root_agent = Agent(
-        model="gemini-3.5-flash",  # Set to the latest Flash model
-        name="geo_validator",
-        instruction="Answer questions.",
-        before_model_callback=log_query_to_model,
-        after_model_callback=log_model_response,
-        output_schema=CountryCapital,       # Enforce strict JSON output matching the schema
-        disallow_transfer_to_parent=True,   # Disable transferring to parent
-        disallow_transfer_to_peers=True,    # Disable transferring to peer agents
-    )
-
-    # 5. Create a Runner
-    runner = InMemoryRunner(
-        agent=root_agent,
-        app_name=app_name,
-    )
-
-    # 6. Create a session
-    my_session = await runner.session_service.create_session(
-        app_name=app_name, user_id=user_id_1
-    )
-
-    # 7. Prepare a function to package a user's message as
-    # genai.types.Content, run it asynchronously, and iterate
-    # through the response 
-    async def run_prompt(session: Session, new_message: str):
-        content = types.Content(
-                role='user', parts=[types.Part.from_text(text=new_message)]
-            )
-        print('** User says:', content.model_dump(exclude_none=True))
-        async for event in runner.run_async(
-            user_id=user_id_1,
-            session_id=session.id,
-            new_message=content,
-        ):
-            if event.content.parts and event.content.parts[0].text:
-                print(f'** {event.author}: {event.content.parts[0].text}')
-
-        cloud_logging_client.close()
+# Module-level root_agent so `adk web`, `adk run` and the local console can load it
+# (it used to be created inside main(), so only the script entrypoint could use it).
+root_agent = Agent(
+    model=MODEL,
+    name="geo_validator",
+    description="Verifies geographic capital cities and answers in strict JSON.",
+    instruction="Return the capital city of the requested country in the strict JSON format specified.",
+    before_model_callback=log_query_to_model,
+    after_model_callback=log_model_response,
+    output_schema=CountryCapital,       # enforce strict JSON output matching the schema
+    disallow_transfer_to_parent=True,
+    disallow_transfer_to_peers=True,
+)
 
 
-    # 8. Use this function on a new query
-    query = "What is the capital of France?"
-    await run_prompt(my_session, query)
+async def main(query: str = "What is the capital of France?"):
+    setup_logging()
+    runner = InMemoryRunner(agent=root_agent, app_name='geo_validator_app')
+    session = await runner.session_service.create_session(app_name='geo_validator_app', user_id='user1')
+    content = types.Content(role='user', parts=[types.Part.from_text(text=query)])
+    print('** User says:', query)
+    async for event in runner.run_async(user_id='user1', session_id=session.id, new_message=content):
+        if event.content and event.content.parts and event.content.parts[0].text:
+            print(f'** {event.author}: {event.content.parts[0].text}')
+
 
 if __name__ == "__main__":
     asyncio.run(main())

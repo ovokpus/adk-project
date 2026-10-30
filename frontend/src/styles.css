@@ -1,0 +1,32 @@
+* { box-sizing: border-box }
+body { margin: 0; font-family: system-ui, sans-serif; background: #f1f5f9; color: #0f172a }
+.page { max-width: 1240px; margin: 0 auto; padding: 22px }
+header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap }
+h1 { margin: 0 0 4px; font-size: 24px } h2 { margin: 0 0 6px; font-size: 20px } h3 { margin: 0 0 8px }
+h2 code { font-size: 13px; color: #64748b; font-weight: 400 }
+.hint { font-size: 12px; color: #64748b }
+.badge { padding: 5px 12px; border-radius: 99px; font-size: 13px; font-weight: 600 }
+.badge.ok { background: #dcfce7; color: #166534 } .badge.off { background: #fef3c7; color: #92400e }
+.banner { margin: 14px 0; padding: 10px 14px; border-radius: 8px; background: #fffbeb; border: 1px solid #fcd34d; font-size: 14px }
+.layout { display: grid; grid-template-columns: 250px 1fr; gap: 16px; margin-top: 14px }
+nav { display: flex; flex-direction: column; gap: 8px }
+nav button { text-align: left; background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 3px }
+nav button span { font-size: 12px; color: #64748b } nav button.active { border-color: #4f46e5; box-shadow: 0 0 0 2px #e0e7ff }
+main { display: flex; flex-direction: column; gap: 14px; min-width: 0 }
+.card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px }
+.meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: #475569; margin: 8px 0 }
+.chip { background: #e0e7ff; color: #3730a3; padding: 2px 8px; border-radius: 99px; margin-left: 4px; font-weight: 600 }
+.pipeline { margin: 10px 0 }
+.steps { display: flex; align-items: center; flex-wrap: wrap; margin-top: 6px }
+.stepwrap { display: flex; align-items: center } .arrow { font-size: 22px; margin: 0 10px; color: #4f46e5 }
+.step { border: 2px solid #c7d2fe; background: #eef2ff; border-radius: 10px; padding: 8px 12px }
+details { margin-top: 6px } summary { cursor: pointer; font-size: 13px; color: #334155 }
+pre { background: #0f172a; color: #e2e8f0; padding: 10px; border-radius: 8px; font-size: 12px; white-space: pre-wrap; overflow: auto; max-height: 260px; margin: 6px 0 }
+textarea { width: 100%; font: inherit; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 8px }
+button { background: #e2e8f0; border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer; font-weight: 600 }
+button.primary { background: #4f46e5; color: white } button:disabled { opacity: .6 }
+.result { margin-top: 10px; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0 }
+.result.notrun { background: #fffbeb; border-color: #fcd34d } .result.error { background: #fef2f2; border-color: #fca5a5; color: #991b1b }
+.event .author { font-size: 12px; font-weight: 700; color: #4f46e5 }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
+pre.okbox { background: #052e16; color: #bbf7d0 } pre.badbox { background: #450a0a; color: #fecaca }

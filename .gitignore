@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.DS_Store
+.venv/
+.env
+**/.env
+.adk/
+**/.adk/
+node_modules/
+frontend/dist/
+*.tsbuildinfo
