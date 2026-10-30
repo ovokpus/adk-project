@@ -20,8 +20,9 @@ from google.adk.agents.callback_context import CallbackContext
 from google.adk.models import LlmResponse
 
 import sys
-sys.path.append("../..")
-from callback_logging import log_query_to_model, log_model_response
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
+from callback_logging import log_query_to_model, log_model_response  # noqa: E402
+from settings import MODEL  # noqa: E402
 
 from . import prompt
 
@@ -36,14 +37,14 @@ def _remove_end_of_edit_mark(
     if not llm_response.content or not llm_response.content.parts:
         return llm_response
     for idx, part in enumerate(llm_response.content.parts):
-        if _END_OF_EDIT_MARK in part.text:
+        if part.text and _END_OF_EDIT_MARK in part.text:
             del llm_response.content.parts[idx + 1 :]
             part.text = part.text.split(_END_OF_EDIT_MARK, 1)[0]
     return llm_response
 
 
 reviser_agent = Agent(
-    model=os.getenv("MODEL"),
+    model=MODEL,
     name='reviser_agent',
     instruction=prompt.REVISER_PROMPT,
     before_model_callback=log_query_to_model,

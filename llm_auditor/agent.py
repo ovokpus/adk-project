@@ -17,15 +17,15 @@
 from google.adk.agents import SequentialAgent
 
 from .sub_agents.critic import critic_agent
-from .sub_agents.reviser import reviser_agent  # <--- TODO: ENABLE THIS
+from .sub_agents.reviser import reviser_agent
 
-import logging
-import google.cloud.logging
+import os
+import sys
 
-logging.basicConfig()
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from callback_logging import setup_logging  # noqa: E402
 
-cloud_logging_client = google.cloud.logging.Client()
-cloud_logging_client.setup_logging()
+setup_logging()  # Cloud Logging only when ENABLE_CLOUD_LOGGING=true
 
 
 llm_auditor = SequentialAgent(
@@ -35,7 +35,7 @@ llm_auditor = SequentialAgent(
         ' web, and refines the response to ensure alignment with real-world'
         ' knowledge.'
     ),
-    sub_agents=[critic_agent, reviser_agent], # <--- TODO: ADD reviser_agent CHECK HERE
+    sub_agents=[critic_agent, reviser_agent],  # critic checks, reviser fixes
 )
 
 root_agent = llm_auditor

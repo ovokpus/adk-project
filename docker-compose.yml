@@ -1,0 +1,19 @@
+services:
+  api:
+    build: .
+    image: adk-project/api:local
+    env_file:
+      - path: .env
+        required: false
+    ports: ["${API_PORT:-8000}:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      retries: 20
+
+  frontend:
+    build: ./frontend
+    ports: ["${FRONTEND_PORT:-3000}:80"]
+    depends_on:
+      api:
+        condition: service_healthy

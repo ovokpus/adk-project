@@ -22,8 +22,9 @@ from google.adk.tools import google_search
 from google.genai import types
 
 import sys
-sys.path.append("../..")
-from callback_logging import log_query_to_model, log_model_response
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
+from callback_logging import log_query_to_model, log_model_response  # noqa: E402
+from settings import MODEL  # noqa: E402
 
 from . import prompt
 
@@ -66,7 +67,7 @@ def _render_reference(
 
 
 critic_agent = Agent(
-    model=os.getenv("MODEL"),
+    model=MODEL,
     name='critic_agent',
     instruction=prompt.CRITIC_PROMPT,
     tools=[google_search],

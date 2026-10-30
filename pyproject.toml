@@ -1,0 +1,25 @@
+[project]
+name = "adk-project"
+version = "0.2.0"
+description = "Cymbal Travel ADK agents (Travel Scout, Destination Verifier, Brochure Auditor) with a local FastAPI + React console"
+requires-python = ">=3.11"
+dependencies = [
+    "google-adk>=1.0",
+    "google-cloud-logging>=3.10",
+    "python-dotenv>=1.0",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "httpx>=0.27",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

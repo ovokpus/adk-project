@@ -4,17 +4,18 @@ from google.adk.tools import google_search  # The Google Search tool
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from callback_logging import log_query_to_model, log_model_response
+from callback_logging import log_query_to_model, log_model_response  # noqa: E402
+from settings import MODEL  # noqa: E402
 
 
 root_agent = Agent(
     # name: A unique name for the agent.
-    name="google_search_agent",
+    name="google_search_agent",  # Travel Scout
     # description: A short description of the agent's purpose, so
     # other agents in a multi-agent system know when to call it.
     description="Answer questions using Google Search.",
     # model: The LLM model that the agent will use:
-    model=os.getenv("MODEL"),
+    model=MODEL,
     # instruction: Instructions (or the prompt) for the agent.
     instruction="You are an expert researcher. You stick to the facts.",
     # callbacks: Allow for you to run functions at certain points in

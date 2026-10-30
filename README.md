@@ -1,221 +1,113 @@
-# Related Learning Materials
+# 🧭 Cymbal Travel · ADK Agent Console
 
-If you are looking for resources that will help you develop the skills required to complete this lab successfully, consider reviewing relevant sections from the following:
+> Four Google **Agent Development Kit (ADK)** agents from a Cymbal Travel lab, packaged as a local app:
+> a **FastAPI** backend plus a **React** console, started with one `docker compose up`.
 
-> [!NOTE]  
-> The documentation links below may contain examples using Gemini API keys. For this lab, you must ignore those instructions and use the Agent Platform as detailed in the tasks below.
-
-| Category | Resources |
-| :--- | :--- |
-| **Online Documentation** | [Agent Development Kit (ADK)](https://adk.dev/) <br> [Google Search Tool for ADK](https://adk.dev/integrations/google-search/) <br> [Structuring Data with ADK](https://adk.dev/schemas/) <br> [Sequential Agents](https://adk.dev/agents/) |
-| **Courses, Labs, and Tutorials** | [Understand Google Cloud Agents](https://www.cloudskillsboost.google/) <br> [Build your first agent with Agent Development Kit (ADK)](https://www.cloudskillsboost.google/) <br> [Build intelligent agents with the Agent Development Kit (ADK)](https://www.cloudskillsboost.google/) |
+![Console in offline mode](docs/screenshots/01-console-offline.png)
 
 ---
 
-# Challenge Scenario
+## 1. What's inside
 
-You have just joined Cymbal Travel, a premier travel agency dedicated to curating the perfect vacation experiences for their customers. Cymbal Travel uses a suite of AI agents to scour the web for travel updates, validate destination data, and audit marketing brochures for accuracy.
+| Agent | ADK type | What it shows |
+|---|---|---|
+| **Travel Scout** `my_google_search_agent` | `LlmAgent` + `google_search` | Grounded web search for travel questions |
+| **Destination Verifier** `geo_validator` | `LlmAgent` + `output_schema` | Structured JSON output (`CountryCapital`), no agent transfers |
+| **Brochure Auditor** `llm_auditor` | `SequentialAgent` | Critic (search + references) → Reviser (strips its edit marker) |
+| **Trivia starter** `app_agent` | `LlmAgent` | Minimal agent |
 
-![Cymbal Labs Logo](about:sanitized) *(Cymbal Labs Logo)*
+## 2. Architecture
 
-Your team has built prototypes for a **"Travel Scout"** and a **"Brochure Auditor"** using Google's Agent Development Kit (ADK). However, the prototypes are currently misconfigured, incomplete, or broken.
-
-*   The **Brochure Auditor** is supposed to be a multi-agent pipeline that both checks and fixes errors, but the previous engineer only implemented the "check" phase.
-*   The **Travel Scout** hasn't been given access to Google Search yet.
-
-As a new Agent Engineer, your job is to repair and deploy these agents to ensure downstream systems receive consistent, accurate data.
-
-You will be working in the `adk_project` directory, which contains:
-*   `my_google_search_agent`: A **"Travel Scout"** meant to search for events (currently broken).
-*   `geo_validator`: A **"Destination Verifier"** that returns unstructured text (needs a strict schema).
-*   `llm_auditor`: A sophisticated multi-agent system for brochure auditing (needs configuration).
-
-### Your Challenge Tasks
-1.  Initialize the Travel Scout (`my_google_search_agent`) to use the Google Search tool.
-2.  Run the agent to find upcoming events.
-3.  Enforce strict JSON schemas in the Destination Verifier (`geo_validator`).
-4.  Configure the Brochure Auditor (`llm_auditor`) pipeline by enabling the missing Reviser Agent.
-
----
-
-## Task 1. Install ADK and Set Up Your Environment
-
-In this task, you will install the Agent Development Kit (ADK) and set up your environment.
-
-1.  Open the **Cloud Shell Terminal**.
-2.  Update your `PATH` environment variable and install ADK:
-
-```bash
-export PATH=$PATH:"/home/${USER}/.local/bin"
-python3 -m pip install google-adk
+```mermaid
+flowchart LR
+  U[Browser] --> N[nginx :3000<br/>React console]
+  N -- /api, /health --> A[FastAPI :8000<br/>server/api.py]
+  A --> R[ADK InMemoryRunner]
+  R --> AG[root_agent of<br/>each package]
+  AG -- only with credentials --> G[(Gemini API<br/>or Vertex AI)]
+  A -. offline .-> I[Introspection<br/>schema check<br/>callbacks]
 ```
 
-3.  Authenticate to Google Cloud and set up application default credentials:
+```mermaid
+flowchart LR
+  Q[Claim to check] --> C[critic_agent<br/>google_search]
+  C -- after_model: _render_reference --> C2[critique + references]
+  C2 --> RV[reviser_agent]
+  RV -- after_model: _remove_end_of_edit_mark --> OUT[Corrected text]
+```
+
+## 3. Run it
+
+```bash
+cp .env.example .env        # optional: add GOOGLE_API_KEY
+docker compose up --build
+# console: http://localhost:3000   API docs: http://localhost:8000/docs
+docker compose down
+```
+
+Vertex AI with your gcloud ADC (opt-in, mounts `~/.config/gcloud` read-only):
 
 ```bash
 gcloud auth application-default login
+GOOGLE_CLOUD_PROJECT=your-project docker compose -f docker-compose.yml -f docker-compose.vertex.yml up --build
 ```
 
-4.  When prompted, type `Y`, and press **ENTER**.
-5.  Click the authorization link in the terminal to launch the sign-in flow, log in with your lab student credentials, click **Allow**, and copy the verification code.
-6.  Paste the authorization code into the terminal and press **ENTER**.
-7.  Download and extract the source code for the lab:
+Without Docker: `uv sync && uv run uvicorn server.api:app --reload`, then `cd frontend && npm ci && npm run dev`. `adk web` also works as before.
 
-```bash
-gcloud storage cp gs://qwiklabs-gcp-04-92a9a1e91984-bucket/adk_project.zip .
-unzip adk_project.zip
-cd adk_project
-pip install -r requirements.txt
+## 4. Offline mode (no key) ⚠️
+
+**Every screenshot here was taken with no model credentials.** No agent output on this page was generated or simulated.
+
+| Feature | No key | With key |
+|---|---|---|
+| Inspect agents, tools, schemas, pipeline | ✅ | ✅ |
+| Validate JSON against `CountryCapital` | ✅ | ✅ |
+| Run the reviser callback on your text | ✅ | ✅ |
+| **Run agent** | ⏸ `503` "Not run", plus the reason | ✅ events from the real model |
+
+When the key is wrong, the run returns `502` with Google's actual error (checked with a deliberately invalid key: `API_KEY_INVALID`).
+
+![Run not configured](docs/screenshots/02-run-not-configured.png)
+
+### Schema check
+
+![Schema validation](docs/screenshots/03-schema-validation.png)
+
+### Auditor pipeline and reviser callback
+
+![Auditor](docs/screenshots/04-auditor-pipeline-callback.png)
+
+### API
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/health` | LLM status, model, agents |
+| GET | `/api/agents` | Agent tree: model, instruction, tools, schema, callbacks |
+| POST | `/api/agents/{id}/run` | Run with ADK (`503` when there are no credentials) |
+| POST | `/api/agents/{id}/validate-output` | Validate JSON against the agent's `output_schema` |
+| POST | `/api/callbacks/reviser-end-of-edit` | Apply the reviser callback |
+
+![API docs](docs/screenshots/05-api-docs.png)
+
+## 5. Configuration
+
+See [`.env.example`](.env.example): `GOOGLE_API_KEY`, or `GOOGLE_GENAI_USE_VERTEXAI` + `GOOGLE_CLOUD_PROJECT`/`LOCATION`, plus `MODEL` (default `gemini-3.5-flash`) and `ENABLE_CLOUD_LOGGING` (default off; previously a Cloud Logging client was created at import time and failed without GCP credentials).
+
+## 6. Quality
+
+- `uv run pytest`: offline tests for agent wiring, both callbacks, LLM status, 503 gating and schema validation.
+- CI (`.github/workflows/ci.yml`): tests, then the frontend build, then `docker compose build`.
+- Fix: the reviser callback crashed on parts with no text (`None in str`).
+
+## 7. Repo map
+
+```
+app_agent/ geo_validator/ llm_auditor/ my_google_search_agent/   ADK agents (root_agent)
+settings.py callback_logging.py                                  shared model + logging config
+server/api.py                                                    FastAPI
+frontend/                                                        React + Vite + TS (nginx)
+tests/  scripts/screenshots.py  docs/
+legacy/                                                          lab leftovers (moved, not deleted)
 ```
 
----
-
-## Task 2. Initialize and Configure the Travel Scout
-
-### 1. Configure the Environment
-Navigate to the directory `adk_project/my_google_search_agent`. Copy and paste the following configuration completely into `adk_project/my_google_search_agent/.env`:
-
-```env
-GOOGLE_GENAI_USE_ENTERPRISE=true
-GOOGLE_CLOUD_PROJECT=qwiklabs-gcp-04-92a9a1e91984
-GOOGLE_CLOUD_LOCATION=global
-MODEL=gemini-3.5-flash
-```
-
-> [!NOTE]  
-> Be sure to set `GOOGLE_CLOUD_LOCATION` to `global`. This is pertinent to the lab working successfully.
-
-### 2. Update the Agent Code
-Open `adk_project/my_google_search_agent/agent.py` and replace its entire contents with the following code to enable the Google Search tool:
-
-```python
-from google.adk.agents import Agent
-from google.adk.tools import google_search
-
-agent = Agent(
-    name="my_google_search_agent",
-    description="An agent that searches the web using Google Search.",
-    instruction="You are a helpful travel assistant. Always use Google Search to find real-time, accurate events and information.",
-    tools=[google_search],
-)
-```
-
-### 3. Launch the ADK Dev UI
-From your Cloud Shell terminal, launch the web interface:
-
-```bash
-cd ~/adk_project
-adk web --allow_origins "regex:https://.*\.cloudshell\.dev"
-```
-
-1.  Open the web interface URL provided in the terminal.
-2.  Select **my_google_search_agent** and run the query:  
-    > *"What are some major events in Tokyo in 2025?"*
-3.  Stop the web server in the terminal using `CTRL+C`.
-
----
-
-## Task 3. Verify the Agent via the CLI
-
-Test your agent directly from the command-line interface:
-
-```bash
-# Run the agent in the CLI
-adk run my_google_search_agent
-
-# Ask the agent:
-# "What is the currency exchange rate for Japan?"
-
-# Press CTRL+C to exit when finished
-```
-
----
-
-## Task 4. Enforce Structured Standards
-
-### 1. Configure the Environment
-Navigate to `adk_project/geo_validator`. Copy and paste the following configuration completely into `adk_project/geo_validator/.env`:
-
-```env
-GOOGLE_GENAI_USE_ENTERPRISE=true
-GOOGLE_CLOUD_PROJECT=qwiklabs-gcp-04-92a9a1e91984
-GOOGLE_CLOUD_LOCATION=global
-MODEL=gemini-3.5-flash
-```
-
-### 2. Update the Agent Code
-Open `adk_project/geo_validator/agent.py` and replace its contents with the following code. This defines a strict Pydantic JSON schema and disables agent handoffs:
-
-```python
-from pydantic import BaseModel, Field
-from google.adk.agents import Agent
-from google.adk.runners import Runner
-
-# Define the structured output schema
-class CountryCapital(BaseModel):
-    capital: str = Field(description="The capital city of the requested country.")
-
-agent = Agent(
-    name="geo_validator",
-    description="An agent that verifies geographic capital cities.",
-    instruction="Return the capital city of the requested country in the strict JSON format specified.",
-    output_schema=CountryCapital,
-    disallow_transfer_to_parent=True,
-    disallow_transfer_to_peers=True,
-)
-
-if __name__ == "__main__":
-    runner = Runner()
-    response = runner.run(agent, "What is the capital of France?")
-    print(response.text)
-```
-
-### 3. Run the Agent
-Execute the script to verify that it prints a structured JSON object:
-
-```bash
-python3 geo_validator/agent.py
-```
-
----
-
-## Task 5. Deploy the Brochure Auditor
-
-### 1. Configure the Environment
-Navigate to `adk_project/llm_auditor`. Copy and paste the following configuration completely into `adk_project/llm_auditor/.env`:
-
-```env
-GOOGLE_GENAI_USE_ENTERPRISE=true
-GOOGLE_CLOUD_PROJECT=qwiklabs-gcp-04-92a9a1e91984
-GOOGLE_CLOUD_LOCATION=global
-MODEL=gemini-3.5-flash
-```
-
-### 2. Update the Agent Code
-Open `adk_project/llm_auditor/agent.py` and replace its contents with the following code. This un-comments the reviser import and adds it to the pipeline:
-
-```python
-from google.adk.agents import Agent
-from .critic_agent.agent import agent as critic_agent
-from .reviser_agent.agent import agent as reviser_agent
-
-agent = Agent(
-    name="llm_auditor",
-    description="A multi-agent pipeline that fact-checks and revises brochures.",
-    instruction="Audit the provided marketing claim. Use the Critic Agent to check for errors, and then have the Reviser Agent rewrite the claim based on those findings.",
-    sub_agents=[critic_agent, reviser_agent],
-)
-```
-
-### 3. Run and Audit the Claim
-Launch the Dev UI again to verify the multi-agent orchestration pipeline:
-
-```bash
-cd ~/adk_project
-adk web --allow_origins "regex:https://.*\.cloudshell\.dev"
-```
-
-1.  Select **llm_auditor** in the UI.
-2.  Submit the claim:  
-    > *"Double check this: You can take a direct train from Hawaii to Japan."*
-3.  The pipeline should run the critic to identify the error, hand off to the reviser, and return the corrected factual claim.
+The original lab instructions are in [docs/ORIGINAL_README.md](docs/ORIGINAL_README.md).

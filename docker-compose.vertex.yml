@@ -1,0 +1,11 @@
+# Opt-in overlay for Vertex AI / Agent Platform using your local gcloud ADC:
+#   gcloud auth application-default login
+#   docker compose -f docker-compose.yml -f docker-compose.vertex.yml up
+# Mounts ~/.config/gcloud read-only into the api container. Not used by default.
+services:
+  api:
+    environment:
+      GOOGLE_GENAI_USE_VERTEXAI: "true"
+      GOOGLE_APPLICATION_CREDENTIALS: /gcloud/application_default_credentials.json
+    volumes:
+      - ${HOME}/.config/gcloud:/gcloud:ro
