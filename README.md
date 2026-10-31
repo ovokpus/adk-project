@@ -1,5 +1,7 @@
 # 🧭 Cymbal Travel · ADK Agent Console
 
+<p align="center"><img src="docs/assets/hero.svg" alt="Cymbal Travel ADK Console" width="100%"/></p>
+
 > Four Google **Agent Development Kit (ADK)** agents from a Cymbal Travel lab, packaged as a local app:
 > a **FastAPI** backend plus a **React** console, started with one `docker compose up`.
 
@@ -17,6 +19,8 @@
 | **Trivia starter** `app_agent` | `LlmAgent` | Minimal agent |
 
 ## 2. Architecture
+
+<p align="center"><img src="docs/assets/flow.svg" alt="Cymbal Travel ADK Console data flow" width="100%"/></p>
 
 ```mermaid
 flowchart LR
