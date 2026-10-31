@@ -9,6 +9,10 @@
 
 ---
 
+## Business case
+
+Teams trying AI agents often stall after the first demo. This console puts four Google ADK agent patterns for a travel business side by side (grounded search, structured output, a critic and reviser, and a minimal agent), and it behaves honestly without credentials. Its value is in choosing a pattern, not in the agents themselves. [docs/BUSINESS_CASE.md](docs/BUSINESS_CASE.md) covers the use cases, an illustrative ROI model and the limits.
+
 ## 1. What's inside
 
 | Agent | ADK type | What it shows |
